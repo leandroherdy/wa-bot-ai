@@ -1,0 +1,13 @@
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  wa-bot-ai:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    container_name: wa-bot-ai
+    networks:
+      - app-network
