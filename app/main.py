@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
+from app.endpoints import waha
+
+app = FastAPI(title="API - Chatbot")
 
 
-app = FastAPI()
+router = APIRouter()
 
 
-@app.get("/")
-def ping():
-    return {"message": "Wellcome FastAPI and kubernetes!"}
+app.include_router(waha.router, prefix="/api/chatbot", tags=["chatbot"])

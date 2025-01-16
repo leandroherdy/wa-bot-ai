@@ -11,3 +11,14 @@ services:
     container_name: wa-bot-ai
     networks:
       - app-network
+
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: wa_bot_waha
+    restart: always
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./waha-data:/app/data
+    networks:
+      - app-network
