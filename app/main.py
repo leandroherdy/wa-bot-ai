@@ -1,7 +1,7 @@
 from fastapi import APIRouter, FastAPI
 from app.endpoints import waha
 
-app = FastAPI(title="API - Chatbot")
+app = FastAPI(title="API Documentation - Chatbot Integration with Groq API")
 
 
 router = APIRouter()
