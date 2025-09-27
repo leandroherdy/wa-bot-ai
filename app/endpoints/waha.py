@@ -35,6 +35,14 @@ async def webhook(data: WebhookRequestSchema):
         chat_id = data.payload["from"]
         received_message = data.payload["body"]
 
+        is_group = "@g.us" in chat_id
+        is_status = "status@broadcast" in chat_id
+
+        if is_group or is_status:
+            return JSONResponse(
+                {"status": "success", "message": "Group/status message ignored."}
+            )
+
         logger.info(f"Starting typing simulation for chat_id: {chat_id}")
         waha.start_typing(chat_id=chat_id)
         time.sleep(random.randint(3, 5))
