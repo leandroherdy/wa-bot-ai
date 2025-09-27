@@ -40,6 +40,17 @@ class Waha:
             )
             raise
 
+    def get_history_messages(self, chat_id: str, limit: int):
+        url = f"{self.__api_url}/api/default/chats/{chat_id}/messages?limit={limit}&downloadMedia=false"
+        headers = {
+            "content-Type": "application/json",
+        }
+        response = requests.get(
+            url=url,
+            headers=headers,
+        )
+        return response.json()
+
     def start_typing(self, chat_id: str):
         """
         Simulate typing in a chat.

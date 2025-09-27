@@ -2,10 +2,11 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 import logging
 import random
-import time
+import asyncio
 from app.schemas.waha_schema import WebhookRequestSchema
 from app.services.waha_service import Waha
 from app.services.groq_API_client import GroqAPIClient
+from app.services.groq_API_client import PostgresRetriever
 
 
 logging.basicConfig(level=logging.INFO)
@@ -45,11 +46,22 @@ async def webhook(data: WebhookRequestSchema):
 
         logger.info(f"Starting typing simulation for chat_id: {chat_id}")
         waha.start_typing(chat_id=chat_id)
-        time.sleep(random.randint(3, 5))
+        history_messages = waha.get_history_messages(chat_id=chat_id, limit=10)
+
+        logger.info("Searching for relevant context in PostgreSQL")
+        retriever = PostgresRetriever()
+        relevant_docs = retriever._PostgresRetriever__retriever.get_relevant_documents(
+            received_message
+        )
+        context = "\n\n".join([doc.page_content for doc in relevant_docs])
+
+        await asyncio.sleep(random.randint(3, 5))
 
         logger.info("Processing instruction with GroqAPIClient.")
         groq_api_client = GroqAPIClient()
-        response = groq_api_client.process_instruction(text=received_message)
+        response = groq_api_client.process_instruction(
+            history_messages=history_messages, text=received_message, context=context
+        )
 
         logger.info(f"Sending message to chat_id: {chat_id}")
         waha.send_message(chat_id=chat_id, message=response)

@@ -2,6 +2,8 @@ import os
 import logging
 from dotenv import load_dotenv
 from groq import Groq
+from langchain_community.vectorstores import PGVector
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 
 load_dotenv()
@@ -22,12 +24,42 @@ class GroqAPIClient:
             api_key (str): API key for authentication. Defaults to environment variable 'GROQ_API_KEY'.
             model (str): The AI model to use. Defaults to 'llama-3.3-70b-versatile'.
         """
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(self.__class__.__name__)
+
         self.__api_key = api_key or os.getenv("GROQ_API_KEY")
         self.__model = model
         self.__client = Groq(api_key=self.__api_key)
+        self.retriever = self.__build_retriever()
 
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __build_retriever(self):
+        """Build and configure PostgreSQL retriever.
+
+        Returns:
+            BaseRetriever: Configured retriever for vector similarity search.
+        """
+        CONNECTION_STRING = (
+            os.getenv("DATABASE_URL")
+            or "postgresql://postgres:password123@postgres:5432/vectordb"
+        )
+        COLLECTION_NAME = "wa_bot_documents"
+
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+        vectorstore = PGVector(
+            collection_name=COLLECTION_NAME,
+            connection_string=CONNECTION_STRING,
+            embedding_function=embeddings,
+        )
+
+        retriever = vectorstore.as_retriever(
+            search_type="similarity", search_kwargs={"k": 5}
+        )
+
+        self.logger.info("Configured PostgreSQL Retriever")
+        return retriever
 
     def _load_instruction(self) -> str:
         """
@@ -56,7 +88,7 @@ class GroqAPIClient:
             self.logger.error(f"Error loading instruction file: {err}")
             raise
 
-    def process_instruction(self, text: str) -> str:
+    def process_instruction(self, history_messages: str, text: str) -> str:
         """
         Sends an instruction loaded from a file and text to the Groq API for processing.
 
